@@ -1,0 +1,246 @@
+// Prisma schema for Gweistore multi-tenant auto order bot
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id           String          @id @default(uuid())
+  name         String
+  botToken     String
+  isActive     Boolean         @default(true)
+  rentalStart  DateTime?
+  rentalEnd    DateTime?
+  createdAt    DateTime        @default(now())
+  settings     TenantSetting?
+  paymentSettings PaymentProviderSetting?
+  products     Product[]
+  categories   ProductCategory[]
+  users        User[]
+  orders       Order[]
+  broadcasts   Broadcast[]
+  adminUsers   AdminUser[]
+  auditLogs    AuditLog[]
+}
+
+model TenantSetting {
+  id              String   @id @default(uuid())
+  tenantId        String   @unique
+  welcomeType     WelcomeType
+  welcomeText     String?
+  welcomeMediaUrl String?
+  channelUrl      String?
+  testimonialUrl  String?
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+enum WelcomeType {
+  TEXT
+  PHOTO
+  VIDEO
+}
+
+enum PaymentProviderType {
+  PAKASIR
+  MANUAL_TRANSFER
+}
+
+model PaymentProviderSetting {
+  id           String              @id @default(uuid())
+  tenantId     String              @unique
+  provider     PaymentProviderType @default(PAKASIR)
+  projectSlug  String?
+  apiKeyEnc    String?
+  mode         String?             // url | api
+  defaultMethod String?
+  tenant       Tenant              @relation(fields: [tenantId], references: [id])
+}
+
+model User {
+  id         String   @id @default(uuid())
+  tenantId   String
+  tgUserId   String
+  username   String?
+  firstName  String?
+  lastName   String?
+  balance    Int      @default(0)
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime?
+  isBanned   Boolean  @default(false)
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  orders     Order[]
+  logs       TransactionLog[]
+
+  @@unique([tgUserId, tenantId])
+}
+
+model ProductCategory {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  products  Product[]
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  tenantId    String
+  categoryId  String
+  name        String
+  description String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  category    ProductCategory @relation(fields: [categoryId], references: [id])
+  variants    ProductVariant[]
+}
+
+model ProductVariant {
+  id        String  @id @default(uuid())
+  productId String
+  name      String
+  price     Int
+  stock     Int      @default(0)
+  sku       String?
+  isActive  Boolean  @default(true)
+  product   Product @relation(fields: [productId], references: [id])
+  orders    Order[]
+  stockItems ProductStockItem[]
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CANCELLED
+  EXPIRED
+  FULFILLED
+}
+
+model Order {
+  id         String      @id @default(uuid())
+  tenantId   String
+  userId     String
+  variantId  String?
+  orderCode  String      @unique
+  status     OrderStatus @default(PENDING)
+  amount     Int
+  qty        Int
+  createdAt  DateTime    @default(now())
+  paidAt     DateTime?
+  tenant     Tenant      @relation(fields: [tenantId], references: [id])
+  user       User        @relation(fields: [userId], references: [id])
+  variant    ProductVariant? @relation(fields: [variantId], references: [id])
+  payment    Payment?
+  stockItems ProductStockItem[]
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  CANCELLED
+  EXPIRED
+}
+
+model Payment {
+  id                   String         @id @default(uuid())
+  orderId              String         @unique
+  provider             PaymentProviderType
+  providerRef          String?
+  payUrl               String?
+  paymentMethod        String?
+  rawCreateResponseJson Json?
+  rawWebhookJson       Json?
+  status               PaymentStatus  @default(PENDING)
+  order                Order          @relation(fields: [orderId], references: [id])
+}
+
+model ProductStockItem {
+  id        String   @id @default(uuid())
+  variantId String
+  content   String
+  isUsed    Boolean  @default(false)
+  orderId   String?
+  createdAt DateTime @default(now())
+
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+  order     Order?         @relation(fields: [orderId], references: [id])
+}
+
+enum TransactionType {
+  TOPUP
+  PURCHASE
+  ADJUSTMENT
+}
+
+model TransactionLog {
+  id        String           @id @default(uuid())
+  tenantId  String
+  userId    String
+  type      TransactionType
+  amount    Int
+  note      String?
+  createdAt DateTime         @default(now())
+  tenant    Tenant           @relation(fields: [tenantId], references: [id])
+  user      User             @relation(fields: [userId], references: [id])
+}
+
+enum BroadcastTarget {
+  ALL
+  FILTER
+}
+
+enum BroadcastStatus {
+  PENDING
+  SENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model Broadcast {
+  id          String           @id @default(uuid())
+  tenantId    String
+  messageType String
+  messageText String?
+  mediaUrl    String?
+  target      BroadcastTarget @default(ALL)
+  status      BroadcastStatus @default(PENDING)
+  createdAt   DateTime        @default(now())
+  sentCount   Int             @default(0)
+  failCount   Int             @default(0)
+  tenant      Tenant          @relation(fields: [tenantId], references: [id])
+}
+
+enum AdminRole {
+  SUPERADMIN
+  ADMIN
+  CS
+}
+
+model AdminUser {
+  id           String    @id @default(uuid())
+  tenantId     String?
+  email        String    @unique
+  passwordHash String
+  role         AdminRole @default(ADMIN)
+  tenant       Tenant?   @relation(fields: [tenantId], references: [id])
+  auditLogs    AuditLog[]
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  tenantId    String?
+  adminUserId String?
+  action      String
+  payloadJson Json?
+  createdAt   DateTime @default(now())
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id])
+  adminUser   AdminUser? @relation(fields: [adminUserId], references: [id])
+}
