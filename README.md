@@ -38,6 +38,8 @@ npm run dev --workspace api
 npm run dev --workspace bot-runner
 ```
 
+Single-tenant tanpa API: salin `apps/bot-runner/.env.example` menjadi `.env` lalu isi `BOT_TOKEN`, `PAKASIR_PROJECT_SLUG`, `PAKASIR_API_KEY`. Bot-runner akan memakai konfigurasi ini tanpa memanggil API.
+
 6. Menjalankan admin panel:
 
 ```bash

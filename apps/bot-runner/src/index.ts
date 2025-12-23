@@ -1,5 +1,8 @@
 import { Telegraf, Markup } from 'telegraf';
 import axios from 'axios';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 interface TenantConfig {
   id: string;
@@ -14,6 +17,22 @@ interface TenantConfig {
 }
 
 async function fetchTenants(): Promise<TenantConfig[]> {
+  // Single-tenant fallback via env variables (no API dependency)
+  if (process.env.BOT_TOKEN) {
+    return [
+      {
+        id: 'env-tenant',
+        name: 'Env Bot',
+        botToken: process.env.BOT_TOKEN,
+        isActive: true,
+        settings: {
+          welcomeText: 'Selamat datang! (env bot)',
+          welcomeType: 'TEXT'
+        }
+      }
+    ];
+  }
+
   try {
     const { data } = await axios.get('http://localhost:4000/tenants', {
       headers: { Authorization: `Bearer ${process.env.BOT_RUNNER_TOKEN || ''}` }
