@@ -1,0 +1,18 @@
+{
+  "name": "gweistore",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/api",
+    "apps/admin",
+    "apps/bot-runner",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace api",
+    "dev:bot": "npm run dev --workspace bot-runner",
+    "dev:admin": "npm run dev --workspace admin",
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces"
+  }
+}
