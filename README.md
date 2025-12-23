@@ -18,7 +18,7 @@ Kerangka awal untuk sistem "Auto Order Bot" multi-tenant dengan stack Node.js, E
 npm install
 ```
 
-3. Jalankan migrasi Prisma di `apps/api` setelah konfigurasi database:
+3. Jalankan migrasi Prisma di `apps/api` setelah konfigurasi database (default menggunakan SQLite):
 
 ```bash
 cd apps/api
@@ -43,6 +43,20 @@ npm run dev --workspace bot-runner
 ```bash
 npm run dev --workspace admin
 ```
+
+## Menjalankan di Pterodactyl
+
+Gunakan skrip `pterodactyl-start.sh` sebagai start command. Atur env `SERVICE_TARGET` sesuai layanan:
+
+- `SERVICE_TARGET=api` (default) — menjalankan API Express pada `PORT` (set ke `${SERVER_PORT}` di panel).
+- `SERVICE_TARGET=bot` — menjalankan bot-runner Telegraf.
+- `SERVICE_TARGET=admin` — menjalankan Next.js admin panel.
+
+Contoh konfigurasi Pterodactyl:
+
+- Install command: `npm install`
+- Start command: `bash pterodactyl-start.sh`
+- Env: `SERVICE_TARGET=api`, `PORT=${SERVER_PORT}` (sesuaikan), serta variabel pada `.env.example`.
 
 ## Pengisian stok credential (akun + password)
 

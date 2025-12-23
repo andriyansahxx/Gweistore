@@ -13,6 +13,7 @@
     "dev:bot": "npm run dev --workspace bot-runner",
     "dev:admin": "npm run dev --workspace admin",
     "build": "npm run build --workspaces",
-    "lint": "npm run lint --workspaces"
+    "lint": "npm run lint --workspaces",
+    "start:pterodactyl": "bash ./pterodactyl-start.sh"
   }
 }
